@@ -8,13 +8,18 @@
  * @returns a deep copy of @param src
  */
 export function deepCopy<T>(src: T): T {
-  let target: T = (Array.isArray(src) ? [] : {}) as T;
-  for (let prop in src) {
-    let value = src[prop];
-    if (value && typeof value === 'object') {
-      target[prop] = deepCopy(value);
-    } else {
-      target[prop] = value;
+  let target: T;
+  if (Buffer.isBuffer(src)) {
+    target = Buffer.from(src) as unknown as T;
+  } else {
+    target = (Array.isArray(src) ? [] : {}) as T;
+    for (let prop in src) {
+      let value = src[prop];
+      if (value && typeof value === 'object') {
+        target[prop] = deepCopy(value);
+      } else {
+        target[prop] = value;
+      }
     }
   }
   return target;

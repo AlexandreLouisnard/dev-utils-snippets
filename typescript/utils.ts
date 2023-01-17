@@ -1,4 +1,7 @@
-// @flow
+/* #region Imports */
+import { Buffer } from 'buffer';
+/* #endregion */
+
 
 /* #region Javascript */
 /**
@@ -123,7 +126,7 @@ export function equals(x: any, y: any, equalityCheck: EqualityCheck = 'X_EQUALS_
 
         break;
       default:
-        console.log(`utils: equals(): ERROR: unknown equality check: ${equalityCheck}`);
+        // log(`Utils: equals(): ERROR: unknown equality check: ${equalityCheck}`);
         return false;
     }
   }
@@ -145,11 +148,14 @@ export function equals(x: any, y: any, equalityCheck: EqualityCheck = 'X_EQUALS_
   const xKeys = Object.keys(x);
   switch (equalityCheck) {
     case 'X_EQUALS_Y':
-      return Object.keys(y).every((yKey) => xKeys.indexOf(yKey) !== -1) && xKeys.every((xKey) => equals(x[xKey], y[xKey], equalityCheck));
+      return (
+        Object.keys(y).every((yKey) => xKeys.indexOf(yKey) !== -1) &&
+        xKeys.every((xKey) => equals(x[xKey], y[xKey], equalityCheck))
+      );
     case 'X_SUBSET_OF_Y':
       return xKeys.every((xKey) => equals(x[xKey], y[xKey], equalityCheck));
     default:
-      log(`equals(): ERROR: unknown equality check: ${equalityCheck}`);
+      // log(`equals(): ERROR: unknown equality check: ${equalityCheck}`);
       return false;
   }
 }
@@ -161,8 +167,11 @@ export function equals(x: any, y: any, equalityCheck: EqualityCheck = 'X_EQUALS_
  *
  * NOTE: with TypeScript, this method is useless as we can use optional chaining instead: test?.nested?.property?.[2]?.prop ?? 'default value'
  */
-export const get: <T = any>(object: any, pathToNestedProperty: (string | number)[], defaultValue?: T) => T = (object, pathToNestedProperty, defaultValue = undefined) =>
-  pathToNestedProperty.reduce((xs, x) => (xs && xs[x] !== undefined ? xs[x] : defaultValue), object);
+export const get: <T = any>(object: any, pathToNestedProperty: (string | number)[], defaultValue?: T) => T = (
+  object,
+  pathToNestedProperty,
+  defaultValue = undefined,
+) => pathToNestedProperty.reduce((xs, x) => (xs && xs[x] !== undefined ? xs[x] : defaultValue), object);
 
 /**
  * TS type definition for an object with an {id} attribute.
@@ -170,7 +179,7 @@ export const get: <T = any>(object: any, pathToNestedProperty: (string | number)
 export type IDable = { id: any };
 
 /**
- * Returns a new array in which any item such as {item.id === itemId} has been updated by the updateItemCallback(item) function.
+ * Returns a new array in which any item such as {item.id === itemId} has been updated by the updateItemCallback(item) function, or the same array if nothing has been updated.
  *
  * This function is mutating/non-mutating depending on @param updateItemCallback() being mutating/non-mutating.
  *
@@ -239,7 +248,8 @@ export function isPromise(object: any): boolean {
 
 /* #endregion */
 
-/* #region Strings format */
+/* #region Format/convert/check strings/units/data */
+
 /**
  * Returns the formatted MAC address with the given {divisionChar}. For example if divisionChar = ":", MAC = "01:AA:22:33:BB:44".
  * @param rawMac a raw MAC address (12 alphanum chars) such as 01AA2233BB44
@@ -302,9 +312,12 @@ export function dateToYYYYMMDDHHMMSS(date: Date | null | undefined): string {
   if (!date) {
     return '';
   }
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(
-    date.getMinutes()
-  ).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(
+    2,
+    '0',
+  )} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(
+    date.getSeconds(),
+  ).padStart(2, '0')}`;
 }
 
 /**
@@ -331,9 +344,11 @@ export function isPhoneNumber(phone: string | null | undefined): boolean {
 export function removeForbiddenJsonKeyCharacters(key: string): string {
   return key.replace(/[\|\&\;\$\%\@\"\<\>\(\)\+\,\#\[\]\.\\\/]/g, '_'); // eslint-disable-line no-useless-escape
 }
+
 /* #endregion */
 
 /* #region Binary */
+
 /**
  * For the given {@code number}, sets the bit at {@code bitIndex} to {@code bitValue}, and returns the new number value.
  *
@@ -353,4 +368,5 @@ export function setBit(number: number, bitIndex: number, bitValue: number): numb
       return number;
   }
 }
+
 /* #endregion */

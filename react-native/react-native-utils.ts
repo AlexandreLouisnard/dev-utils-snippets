@@ -3,7 +3,8 @@
 import { NavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Component, useEffect } from 'react';
-import { AppState, AppStateStatus, BackHandler, Dimensions, StatusBar } from 'react-native';
+import { AppState, AppStateStatus, BackHandler, Dimensions, NativeEventSubscription, StatusBar } from 'react-native';
+import { Buffer } from 'buffer';
 
 /* #endregion */
 
@@ -25,7 +26,8 @@ export function logger(header: string): (message: string, ...args: any) => void 
   };
 }
 // Use the logger for this Utils file too.
-const log = logger('Utils');
+const log = logger('react-native-utils');
+
 /* #endregion */
 
 /* #region React Native Components lifecycle */
@@ -46,17 +48,16 @@ export interface ComponentLifecycle {
 }
 
 /**
-   * Sets up some additional callbacks on a React Native {Component}.
-   * Should be called during {Component#componentDidMount()}.
-   * The associated {removeLifecycleListeners()} should be called during {Component#componentWillUnmount()}.
-   *
-  
-   *
-   * @export
-   * @param {(ComponentLifecycle & Component<any, any>)} that
-   * @param {StackNavigationProp} [navigation]
-   */
-export function setupLifecycleListeners(that: ComponentLifecycle & Component<any, any>, navigation?: StackNavigationProp<any, any>) {
+ * Sets up some additional callbacks on a React Native {Component}.
+ *
+ * @export
+ * @param {(ComponentLifecycle & Component<any, any>)} that
+ * @param {StackNavigationProp} [navigation]
+ */
+export function setupLifecycleListeners(
+  that: ComponentLifecycle & Component<any, any>,
+  navigation?: StackNavigationProp<any, any>,
+) {
   // onAppActive(), onAppInactive() callbacks
   const _onAppStateChange = (nextAppState: AppStateStatus) => {
     const appState: AppStateStatus = (that && that.state && that.state.appState) || null;
@@ -74,7 +75,7 @@ export function setupLifecycleListeners(that: ComponentLifecycle & Component<any
 
   // willFocus(), didFocus(), willBlur(), didBlur() callbacks
   if (navigation) {
-    let changeEventSubscription;
+    let changeEventSubscription: NativeEventSubscription;
 
     const onFocusCallback = navigation.addListener('focus', () => {
       // Android back press
@@ -189,7 +190,7 @@ export const useScreenDimensions = () => {
   const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
   const toolbarHeight = StatusBar.currentHeight || 20;
-  const headerHeight = 0; // TODO: useHeaderHeight();
+  const headerHeight = 0; // TODO useHeaderHeight();
   const screenUtilHeight = screenHeight - toolbarHeight - headerHeight;
 
   return { screenHeight, screenWidth, headerHeight, toolbarHeight, screenUtilHeight };

@@ -1,9 +1,9 @@
-package com.louisnard.utils;
+package com.portalp.com_library.model.utils;
 
-import android.databinding.InverseMethod;
+import androidx.databinding.InverseMethod;
 
 /**
- * This helper class is meant to replace {@link android.databinding.ViewDataBinding#safeUnbox(Byte)}... methods which for some reason have protected access.
+ * This helper class is meant to replace {@link androidx.databinding.ViewDataBinding#safeUnbox(Byte)}... methods which for some reason have protected access.
  * <p>
  * In the data-binding expressions in the XML layouts (@{} et @={}), when not wrapping objects explicitly with {@link #safeUnbox(Byte)}... methods, critical warnings get generated at build time.
  * <p>

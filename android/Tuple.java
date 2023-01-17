@@ -1,5 +1,11 @@
-package com.louisnard.utils;
+package com.portalp.utils;
 
+/**
+ * A tuple.
+ *
+ * @param <X> the left part
+ * @param <Y> the right part
+ */
 public class Tuple<X, Y> {
 
     public static final String TAG = Tuple.class.getSimpleName();

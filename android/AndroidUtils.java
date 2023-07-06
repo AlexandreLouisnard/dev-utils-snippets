@@ -374,57 +374,85 @@ public class AndroidUtils {
         return fileNameWithExt;
     }
 
-    /**
-     * Writes a file into the app-specific directory.
-     *
-     * @param context
-     * @param isExternal <b>true</b> if other apps with Manifest.permission.READ_EXTERNAL_STORAGE or Manifest.permission.WRITE_EXTERNAL_STORAGE may read/write it.<br />
-     *                   <b>false</b> if the file must be 100% private to this app
-     * @param dirName
-     * @param fileName   with or without the extension
-     * @param extension  with or without the dot, example "admp" or ".admp"
-     * @param append
-     * @param data
-     * @return
-     */
-    private static File writeFile(Context context, boolean isExternal, String dirName, String fileName, @Nullable String extension, boolean append, String data) {
+    public enum MyStorage {
+        /**
+         * /data/data/package/files <br/>
+         * Can only be accessed by the app itself.<br/>
+         * Gets cleaned-up on app uninstalled.<br/>
+         */
+        APP_DIR_INTERNAL,
+        /**
+         * /storage/sdcard0/Android/data/package/files <br/>
+         * Can be accessed with the file explorer or the computer cable.<br/>
+         * Gets cleaned-up on app uninstalled.<br/>
+         */
+        APP_DIR_EXTERNAL,
+        /**
+         * <b>Deprecated since Android 10.</b><br/>
+         * /storage/sdcard0 <br/>
+         * Root of storage.<br/>
+         */
+        @Deprecated
+        SYSTEM_DIR_ROOT,
+        /**
+         * /storage/sdcard0/Download <br/>
+         * Download dir on system public storage.<br/>
+         * Can be accessed by anyone.<br/>
+         * Does not get cleaned-up on app uninstalled.<br/>
+         */
+        SYSTEM_DIR_DOWNLOADS;
+
+        @Nullable
+        public File getDir(Context context) {
+            switch (this) {
+                case APP_DIR_INTERNAL:
+                    return context.getFilesDir();
+                case APP_DIR_EXTERNAL:
+                    return context.getExternalFilesDir(null);
+                case SYSTEM_DIR_ROOT:
+                    return Environment.getExternalStorageDirectory();
+                case SYSTEM_DIR_DOWNLOADS:
+                    return Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS);
+                default:
+                    return null;
+            }
+        }
+    }
+
+    public static File writeFile(Context context, MyStorage where, String dirName, String fileName, @Nullable String extension, boolean append, String data) {
         final String fileNameWithExt = computeFileNameWithExt(fileName, extension);
         try {
-            final File rootAppDir = isExternal ? context.getExternalFilesDir(null) : context.getFilesDir();
-            final File dir = new File(rootAppDir, dirName);
+            final File rootDir = where.getDir(context);
+            if (rootDir == null) {
+                throw new NullPointerException("writeFile(): MyStorage#" + where + " directory is null");
+            }
+            final File dir = new File(rootDir, dirName);
             dir.mkdirs();
             final File file = new File(dir, fileNameWithExt);
             final FileWriter fileWriter = new FileWriter(file, append);
             fileWriter.write(data);
             fileWriter.close();
+            Log.d(TAG, "writeFile() on " + where + " dirName=" + dirName + " fileName=" + fileName + " extension=" + extension);
             return file;
         } catch (NullPointerException | IOException e) {
-            Log.e(TAG, "writeFile() failed (isExternal=" + isExternal + "): " + e.toString());
+            Log.e(TAG, "writeFile() on " + where + " failed: " + e);
             return null;
         }
     }
 
-    public static File writeExternalFile(Context context, String dirName, String fileName, @Nullable String extension, boolean append, String data) {
-        return writeFile(context, true, dirName, fileName, extension, append, data);
-    }
-
-    public static void logToExtFile(Context context, String filename, String tag, String message) {
+    public static void debugLogToFile(Context context, String logFilename, String tag, String message) {
         final Date date = Calendar.getInstance().getTime();
         final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         final String strDate = dateFormat.format(date);
 
-        Log.d(TAG, "logToExtFile(): " + tag + ": " + message);
-        writeExternalFile(context, DIRECTORY_LOGS, filename, ".log", true, strDate + " " + tag + ": " + message + "\n");
+        Log.d(TAG, "debugLogToFile(): " + tag + ": " + message);
+        writeFile(context, MyStorage.APP_DIR_EXTERNAL, DIRECTORY_LOGS, logFilename, ".log", true, strDate + " " + tag + ": " + message + "\n");
     }
 
-    public static File writeInternalFile(Context context, String dirName, String fileName, @Nullable String extension, boolean append, String data) {
-        return writeFile(context, false, dirName, fileName, extension, append, data);
-    }
-
-    public static String readFile(Context context, boolean isExternal, String dirName, String fileName, @Nullable String extension) {
-        final File rootAppDir = isExternal ? context.getExternalFilesDir(null) : context.getFilesDir();
+    public static String readFile(Context context, MyStorage where, String dirName, String fileName, @Nullable String extension) {
+        final File rootDir = where.getDir(context);
         final String fileNameWithExt = computeFileNameWithExt(fileName, extension);
-        final File dir = new File(rootAppDir, dirName);
+        final File dir = new File(rootDir, dirName);
         final File file = new File(dir, fileNameWithExt);
         return readFile(file);
     }
@@ -456,24 +484,14 @@ public class AndroidUtils {
         return stringBuilder.toString();
     }
 
-    public static File[] getFilesList(Context context, boolean isExternal, String directory) {
-        final File rootAppDir = isExternal ? context.getExternalFilesDir(null) : context.getFilesDir();
-//        File dir0 = Environment.getExternalStorageDirectory(); // => /storage/sdcard0
-//        File dir1 = Environment.getDataDirectory(); // => /data
-//        File dir2 = Environment.getRootDirectory(); // => /system
-//        File dir3 = Environment.getStorageDirectory(); // =>
-//        File dir4 = context.getExternalFilesDir(null); // => /storage/sdcard0/Android/data/package/files : browsable
-//        File dir5 = context.getFilesDir(); // => /data/data/package/files : not accessible with anything else than the app itself
-        final File dir = new File(rootAppDir, directory);
+    public static File[] getFilesList(Context context, MyStorage where, String directory) {
+        final File rootDir = where.getDir(context);
+        final File dir = new File(rootDir, directory);
         dir.mkdirs();
         File[] files = dir.listFiles();
         Arrays.sort(files);
-        Log.d(TAG, "getFilesList(): " + files.length + " files");
+        Log.d(TAG, "getFilesList() on " + where + ": " + files.length + " files");
         return files;
-    }
-
-    public static void deleteFile(Context context, File file) {
-
     }
     //endregion
 
